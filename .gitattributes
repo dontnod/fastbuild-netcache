@@ -1,0 +1,11 @@
+# Everything is text unless it isn’t
+* text=auto
+
+# This is really text
+*.cpp text
+*.h text
+
+# This is Windows-specific and should always have CRLF
+*.sln text eol=crlf
+*.csproj text eol=crlf
+
