@@ -5,8 +5,8 @@ DLL = fbuild-netcache.dll
 CPPFLAGS = -Wall
 INCLUDES = -I3rdparty
 CXXFLAGS = -std=c++20 -Os
-LDFLAGS = -shared
-LIBS = -lws2_32 -lcrypt32 -lssl -lcrypto
+LDFLAGS = -shared -static
+LIBS = -lssl -lcrypto -lws2_32 -lcrypt32
 
 $(DLL): $(SRC)
 	$(CXX) $(CPPFLAGS) $(INCLUDES) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
