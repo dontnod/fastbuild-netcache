@@ -80,7 +80,7 @@ public:
         // Create a web client using the server part
         m_web_client = std::make_shared<httplib::Client>(m_proto + m_server);
         m_web_client->set_default_headers({
-            { "User-Agent", std::format("FASTBuild Network Cache Plugin v{}", VERSION) },
+            { "User-Agent", std::format("FASTBuild-NetCache/{}", VERSION) },
         });
 
 #if _WIN32
