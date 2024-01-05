@@ -23,8 +23,6 @@
 //  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#define VERSION "0.0.0" // this is really a proof of concept for now
-
 #if _WIN32
 #   define __WINDOWS__ 1
 #elif __linux__

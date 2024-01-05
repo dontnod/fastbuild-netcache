@@ -1,12 +1,19 @@
 
+# this is really a proof of concept for now
+VERSION = 0.0.0
+
 SRC = fbuild-netcache.cpp
 DLL = fbuild-netcache.dll
+ZIP = fbuild-netcache-$(VERSION)_windows-x64.zip
 
-CPPFLAGS = -Wall
+CPPFLAGS = -Wall -DVERSION=\"$(VERSION)\"
 INCLUDES = -I3rdparty
 CXXFLAGS = -std=c++20 -Os
 LDFLAGS = -shared -static
 LIBS = -lssl -lcrypto -lws2_32 -lcrypt32
+
+$(ZIP): $(DLL)
+	zip $@ $^
 
 $(DLL): $(SRC)
 	$(CXX) $(CPPFLAGS) $(INCLUDES) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
