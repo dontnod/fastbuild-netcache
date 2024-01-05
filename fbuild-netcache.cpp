@@ -42,6 +42,7 @@
 #include <memory> // for std::shared_ptr
 #include <regex>  // for std::regex_match()
 #include <string> // for std::string
+#include <unordered_map> // for std::unordered_map
 
 //
 // Global variable storing the cache plugin data; the current API does not allow
@@ -118,7 +119,7 @@ public:
         return true;
     }
 
-    // Push a cache entry
+    // Publish a cache entry
     bool publish(char const *cacheId, const void *data, size_t dataSize)
     {
         auto res = m_web_client->Put(shard(cacheId), static_cast<char const *>(data),
@@ -140,16 +141,16 @@ public:
             return false;
         }
 
-        data = new char[res->body.size()];
+        data = res->body.data();
         dataSize = res->body.size();
-        std::memcpy(data, res->body.data(), dataSize);
+        m_data.insert(std::make_pair(data, std::move(res->body)));
         return true;
     }
 
     // Free memory allocated by a previous retrieve() call
     void free_memory(void *data)
     {
-        delete[](static_cast<char *>(data));
+        m_data.erase(data);
     }
 
 protected:
@@ -167,6 +168,7 @@ protected:
 
     std::shared_ptr<httplib::Client> m_web_client;
     std::string m_proto, m_server, m_prefix;
+    std::unordered_map<void *, std::string> m_data;
     CacheOutputFunc m_output_func;
 };
 
