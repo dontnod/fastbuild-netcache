@@ -42,6 +42,7 @@
 #include <memory> // for std::shared_ptr
 #include <regex>  // for std::regex_match()
 #include <string> // for std::string
+#include <algorithm> // for std::ranges::replace()
 #include <unordered_map> // for std::unordered_map
 
 //
@@ -65,17 +66,26 @@ public:
     // Initialise the network cache plugin
     bool init(char const *cachePath, bool cacheRead, bool cacheWrite, bool cacheVerbose, char const *userConfig)
     {
-        // Split the cache path into the protocol+server part, and the rest (dropping the trailing slash)
         std::cmatch m;
-        if (!std::regex_match(cachePath, m, std::regex("^(https?://)([^/]*)(.*[^/])/*$")))
+        // Split the cache path into protocol (HTTP/HTTPS), server, and path (without trailing slash)
+        if (std::regex_match(cachePath, m, std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(\\\\.*[^\\\\])\\\\*")))
+        {
+            m_proto = m[2].str().size() ? "https://" : "http://";
+            m_server = m[1].str();
+            m_prefix = m[3].str();
+            std::ranges::replace(m_prefix, '\\', '/');
+        }
+        else if (std::regex_match(cachePath, m, std::regex("^(https?://)([^/]*)(.*[^/])/*$")))
+        {
+            m_proto = m[1].str();
+            m_server = m[2].str();
+            m_prefix = m[3].str();
+        }
+        else
         {
             output(" - Cache: unrecognised URL format {}, disabling netcache", cachePath);
             return false;
         }
-
-        m_proto = m[1].str();
-        m_server = m[2].str();
-        m_prefix = m[3].str();
 
         // Create a web client using the server part
         m_web_client = std::make_shared<httplib::Client>(m_proto + m_server);
