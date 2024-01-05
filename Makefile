@@ -1,6 +1,6 @@
 
 # this is really a proof of concept for now
-VERSION = 0.0.0
+VERSION = 0.0.1
 
 SRC = fbuild-netcache.cpp
 DLL = fbuild-netcache.dll
