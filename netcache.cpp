@@ -66,16 +66,20 @@ public:
     // Initialise the network cache plugin
     bool init(char const *cachePath, bool cacheRead, bool cacheWrite, bool cacheVerbose, char const *userConfig)
     {
+        static auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
+                                              std::regex_constants::icase);
+        static auto match_http = std::regex("^(https?://)([^/]*)(.*[^/])/*$");
+
         std::cmatch m;
         // Split the cache path into protocol (HTTP/HTTPS), server, and path (without trailing slash)
-        if (std::regex_match(cachePath, m, std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(\\\\.*[^\\\\])\\\\*")))
+        if (std::regex_match(cachePath, m, match_webdav))
         {
             m_proto = m[2].str().size() ? "https://" : "http://";
             m_server = m[1].str();
             m_prefix = m[3].str();
             std::ranges::replace(m_prefix, '\\', '/');
         }
-        else if (std::regex_match(cachePath, m, std::regex("^(https?://)([^/]*)(.*[^/])/*$")))
+        else if (std::regex_match(cachePath, m, match_http))
         {
             m_proto = m[1].str();
             m_server = m[2].str();
