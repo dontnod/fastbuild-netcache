@@ -151,9 +151,12 @@ public:
             return false;
         }
 
-        data = res->body.data();
-        dataSize = res->body.size();
-        m_data.insert(std::make_pair(data, std::move(res->body)));
+        // Wrap the response inside a shared pointer so we can safely store it
+        // in an unordered_map for later releasing.
+        auto body = std::make_shared<std::string>(std::move(res->body));
+        data = body->data();
+        dataSize = body->size();
+        m_data.insert({data, body});
         return true;
     }
 
@@ -178,7 +181,7 @@ protected:
 
     std::shared_ptr<httplib::Client> m_web_client;
     std::string m_proto, m_server, m_prefix;
-    std::unordered_map<void *, std::string> m_data;
+    std::unordered_map<void *, std::shared_ptr<std::string>> m_data;
     CacheOutputFunc m_output_func;
 };
 
