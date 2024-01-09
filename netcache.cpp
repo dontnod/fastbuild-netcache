@@ -91,31 +91,8 @@ public:
             return false;
         }
 
-        // Create a web client using the server part
-        m_web_client = std::make_shared<httplib::Client>(m_proto + m_server);
-        m_web_client->set_default_headers({
-            { "User-Agent", std::format("FASTBuild-NetCache/{}", VERSION) },
-        });
-
-#if _WIN32
-        // If applicable, set basic auth information using stored Windows credentials
-        PCREDENTIALA cred;
-        if (CredReadA(m_server.c_str(), CRED_TYPE_GENERIC, 0, &cred) == TRUE)
-        {
-            // Password is stored as UTF-16 so we have to convert it to UTF-8.
-            int len = WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
-                                          nullptr, 0, nullptr, nullptr);
-            std::string pwd(len, '\0');
-            WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
-                                (LPSTR)pwd.data(), (int)pwd.size(), nullptr, nullptr);
-
-            output(" - Cache: found stored credentials for user {}", cred->UserName);
-            m_web_client->set_basic_auth(cred->UserName, pwd);
-        }
-#endif
-
         // Attempt to connect and possibly authenticate to check that everything is working
-        auto ret = m_web_client->Options(m_prefix);
+        auto ret = http_client()->Options(m_prefix);
         if (ret.error() != httplib::Error::Success)
         {
             output(" - Cache: cannot query {} ({}), disabling netcache",
@@ -136,8 +113,8 @@ public:
     // Publish a cache entry
     bool publish(char const *cacheId, const void *data, size_t dataSize)
     {
-        auto res = m_web_client->Put(shard(cacheId), static_cast<char const *>(data),
-                                     dataSize, "application/octet-stream");
+        auto res = http_client()->Put(shard(cacheId), static_cast<char const *>(data),
+                                      dataSize, "application/octet-stream");
         if (res->status != httplib::StatusCode::Created_201)
         {
             return false;
@@ -149,17 +126,19 @@ public:
     // Retrieve a cache entry
     bool retrieve(char const *cacheId, void * &data, size_t &dataSize)
     {
-        auto res = m_web_client->Get(shard(cacheId));
+        auto res = http_client()->Get(shard(cacheId));
         if (res->status != httplib::StatusCode::OK_200)
         {
             return false;
         }
 
         // Wrap the response inside a shared pointer so we can safely store it
-        // in an unordered_map for later releasing.
+        // in a private map for later releasing.
         auto body = std::make_shared<std::string>(std::move(res->body));
         data = body->data();
         dataSize = body->size();
+
+        std::unique_lock<std::mutex> lock(m_mutex);
         m_data.insert({data, body});
         return true;
     }
@@ -167,10 +146,54 @@ public:
     // Free memory allocated by a previous retrieve() call
     void free_memory(void *data)
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         m_data.erase(data);
     }
 
 protected:
+    // Return the current thread’s web client, or create one if necessary
+    std::shared_ptr<httplib::Client> http_client()
+    {
+        auto it = m_web_clients.find(std::this_thread::get_id());
+        if (it != m_web_clients.end())
+            return it->second;
+
+        auto client = std::make_shared<httplib::Client>(m_proto + m_server);
+        client->set_default_headers({
+            { "User-Agent", std::format("FASTBuild-NetCache/{}", VERSION) },
+        });
+
+        std::unique_lock<std::mutex> lock(m_mutex);
+
+#if _WIN32
+        if (m_user.empty() && m_pass.empty())
+        {
+            // If applicable, set basic auth information using stored Windows credentials
+            PCREDENTIALA cred;
+            if (CredReadA(m_server.c_str(), CRED_TYPE_GENERIC, 0, &cred) == TRUE)
+            {
+                // User is stored in 8-byte chars
+                m_user.assign(cred->UserName);
+
+                // Password is stored as UTF-16 so we have to convert it to UTF-8.
+                int len = WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
+                                              nullptr, 0, nullptr, nullptr);
+                m_pass.resize(len);
+                WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
+                                    (LPSTR)m_pass.data(), (int)m_pass.size(), nullptr, nullptr);
+
+                output(" - Cache: found stored credentials for user {}", m_user);
+            }
+        }
+#endif
+
+        if (!m_user.empty() || !m_pass.empty())
+            client->set_basic_auth(m_user, m_pass);
+
+        m_web_clients.insert({std::this_thread::get_id(), client}).second;
+        return client;
+    }
+
     // Output a message using the std::format syntax
     template<typename... T> void output(std::format_string<T...> const &fmt, T&&... args)
     {
@@ -183,9 +206,22 @@ protected:
         return std::format("{}/{:.2s}/{:.2s}/{}", m_prefix, cacheId, cacheId + 2, cacheId);
     }
 
-    std::shared_ptr<httplib::Client> m_web_client;
+    // Network cache information: protocol, server name, path prefix
     std::string m_proto, m_server, m_prefix;
+
+    // Network cache credentials, if any
+    std::string m_user, m_pass;
+
+    // Per-thread collection of web clients
+    std::unordered_map<std::thread::id, std::shared_ptr<httplib::Client>> m_web_clients;
+
+    // Map of response data for resource tracking
     std::unordered_map<void *, std::shared_ptr<std::string>> m_data;
+
+    // Protect m_user, m_pass, m_web_clients and m_data against concurrent writes
+    std::mutex m_mutex;
+
+    // Logging function provided by FASTBuild
     CacheOutputFunc m_output_func;
 };
 
