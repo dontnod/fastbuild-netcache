@@ -50,16 +50,16 @@
 // to track a state or a closure, so this has to be global.
 //
 
-static std::shared_ptr<class fbuild_netcache> g_plugin;
+static std::shared_ptr<class netcache> g_plugin;
 
 //
 // The network cache class
 //
 
-class fbuild_netcache
+class netcache
 {
 public:
-    fbuild_netcache(CacheOutputFunc outputFunc)
+    netcache(CacheOutputFunc outputFunc)
       : m_output_func(outputFunc)
     {}
 
@@ -87,7 +87,7 @@ public:
         }
         else
         {
-            output(" - Cache: unrecognised URL format {}, disabling netcache", cachePath);
+            output("unrecognised URL format {}, disabling netcache", cachePath);
             return false;
         }
 
@@ -95,18 +95,16 @@ public:
         auto ret = http_client()->Options(m_prefix);
         if (ret.error() != httplib::Error::Success)
         {
-            output(" - Cache: cannot query {} ({}), disabling netcache",
-                   cachePath, httplib::to_string(ret.error()));
+            output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(ret.error()));
             return false;
         }
         else if (ret->status != httplib::StatusCode::OK_200)
         {
-            output(" - Cache: cannot access {} (Status {}), disabling netcache",
-                   cachePath, ret->status);
+            output("cannot access {} (Status {}), disabling cache", cachePath, ret->status);
             return false;
         }
 
-        output(" - Cache: initialised netcache for {}", cachePath);
+        output("initialised cache for {}", cachePath);
         return true;
     }
 
@@ -182,7 +180,7 @@ protected:
                 WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
                                     (LPSTR)m_pass.data(), (int)m_pass.size(), nullptr, nullptr);
 
-                output(" - Cache: found stored credentials for user {}", m_user);
+                output("found stored credentials for user {}", m_user);
             }
         }
 #endif
@@ -197,7 +195,7 @@ protected:
     // Output a message using the std::format syntax
     template<typename... T> void output(std::format_string<T...> const &fmt, T&&... args)
     {
-        m_output_func(std::format(fmt, std::forward<T>(args)...).c_str());
+        m_output_func((" - NetCache: " + std::format(fmt, std::forward<T>(args)...)).c_str());
     }
 
     // Convert a cacheId value to a full path on the server
@@ -236,7 +234,7 @@ extern "C" bool CacheInitEx(const char *cachePath,
                             const char *userConfig,
                             CacheOutputFunc outputFunc)
 {
-    g_plugin = std::make_shared<fbuild_netcache>(outputFunc);
+    g_plugin = std::make_shared<netcache>(outputFunc);
     return g_plugin->init(cachePath, cacheRead, cacheWrite, cacheVerbose, userConfig);
 }
 
