@@ -137,8 +137,7 @@ public:
         dataSize = body->size();
 
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_data.insert({data, body});
-        return true;
+        return m_data.insert({data, body}).second;
     }
 
     // Free memory allocated by a previous retrieve() call
