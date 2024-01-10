@@ -1,0 +1,6 @@
+[submodule "3rdparty/cpp-httplib"]
+	path = 3rdparty/cpp-httplib
+	url = https://github.com/yhirose/cpp-httplib
+[submodule "3rdparty/fastbuild"]
+	path = 3rdparty/fastbuild
+	url = https://github.com/fastbuild/fastbuild

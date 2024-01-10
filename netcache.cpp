@@ -26,10 +26,10 @@
 #elif __linux__
 #   define __LINUX__ 1
 #endif
-#include "CachePluginInterface.h"
+#include "3rdparty/fastbuild/Code/Tools/FBuild/FBuildCore/Cache/CachePluginInterface.h"
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "httplib.h"
+#include "3rdparty/cpp-httplib/httplib.h"
 
 #if _WIN32
 #   include <wincred.h>      // for CredReadA()
