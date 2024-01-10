@@ -42,6 +42,7 @@
 #include <memory> // for std::shared_ptr
 #include <regex>  // for std::regex_match()
 #include <string> // for std::string
+#include <cstdlib> // for std::getenv()
 #include <algorithm> // for std::ranges::replace()
 #include <filesystem> // for std::filesystem::path
 #include <unordered_map> // for std::unordered_map
@@ -95,26 +96,37 @@ public:
             return false;
         }
 
-        // Attempt to connect and possibly authenticate to check that everything is working
         m_client = std::make_shared<webdav_client>(proto + server + port);
 
-#if _WIN32
-        // If applicable, set basic auth information using stored Windows credentials
-        PCREDENTIALA cred;
-        if (CredReadA(server.c_str(), CRED_TYPE_GENERIC, 0, &cred) == TRUE)
+        // Use credentials for the remote server if any are available
+        auto user = std::getenv("FASTBUILD_CACHE_USERNAME");
+        auto pass = std::getenv("FASTBUILD_CACHE_PASSWORD");
+        if (user && user[0] && pass && pass[0])
         {
-            // User is stored as 8-bit chars but password is stored as UTF-16. Convert it to UTF-8.
-            int len = WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
-                                          nullptr, 0, nullptr, nullptr);
-            std::string pass(len, '\0');
-            WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
-                                (LPSTR)pass.data(), (int)pass.size(), nullptr, nullptr);
+            output("found environment credentials for user {}", user);
+            m_client->set_basic_auth(user, pass);
+        }
+#if _WIN32
+        else
+        {
+            // If applicable, set basic auth information using stored Windows credentials
+            PCREDENTIALA cred;
+            if (CredReadA(server.c_str(), CRED_TYPE_GENERIC, 0, &cred) == TRUE)
+            {
+                // User is stored as 8-bit chars but password is stored as UTF-16. Convert it to UTF-8.
+                int len = WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
+                                              nullptr, 0, nullptr, nullptr);
+                std::string pass(len, '\0');
+                WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
+                                    (LPSTR)pass.data(), (int)pass.size(), nullptr, nullptr);
 
-            output("found stored credentials for user {}", cred->UserName);
-            m_client->set_basic_auth(cred->UserName, pass);
+                output("found stored credentials for user {}", cred->UserName);
+                m_client->set_basic_auth(cred->UserName, pass);
+            }
         }
 #endif
 
+        // Attempt to connect and possibly authenticate to check that everything is working
         output("testing connection to {}", proto + server + port + m_root.generic_string());
         auto res = m_client->options(m_root);
         if (res.error() != httplib::Error::Success)
