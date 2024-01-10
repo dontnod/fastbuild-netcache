@@ -27,6 +27,7 @@
 #include <format> // for std::format()
 #include <memory> // for std::shared_ptr
 #include <string> // for std::string
+#include <thread> // for std::mutex
 #include <filesystem> // for std::filesystem::path
 #include <unordered_map> // for std::unordered_map
 

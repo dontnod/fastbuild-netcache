@@ -21,17 +21,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if _WIN32
-#   define __WINDOWS__ 1
-#elif __linux__
-#   define __LINUX__ 1
-#endif
-#include "3rdparty/fastbuild/Code/Tools/FBuild/FBuildCore/Cache/CachePluginInterface.h"
-
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "3rdparty/cpp-httplib/httplib.h"
-
-#include "webdav-client.h"
 
 #if _WIN32
 #   include <wincred.h>      // for CredReadA()
@@ -42,17 +33,13 @@
 #include <memory> // for std::shared_ptr
 #include <regex>  // for std::regex_match()
 #include <string> // for std::string
+#include <thread> // for std::mutex
 #include <cstdlib> // for std::getenv()
 #include <algorithm> // for std::ranges::replace()
 #include <filesystem> // for std::filesystem::path
 #include <unordered_map> // for std::unordered_map
 
-//
-// Global variable storing the cache plugin data; the current API does not allow
-// to track a state or a closure, so this has to be global.
-//
-
-static std::shared_ptr<class netcache> g_plugin;
+#include "webdav-client.h"
 
 //
 // The network cache class
@@ -61,8 +48,8 @@ static std::shared_ptr<class netcache> g_plugin;
 class netcache
 {
 public:
-    netcache(CacheOutputFunc outputFunc)
-      : m_output_func(outputFunc)
+    netcache(std::function<void(char const *)> output_func)
+      : m_output_func(output_func)
     {}
 
     // Initialise the network cache plugin
@@ -209,40 +196,5 @@ private:
     std::mutex m_mutex;
 
     // Logging function provided by FASTBuild
-    CacheOutputFunc m_output_func;
+    std::function<void(char const *)> m_output_func;
 };
-
-//
-// FASTBuild cache plugin API implementation
-//
-
-extern "C" bool CacheInitEx(const char *cachePath,
-                            bool cacheRead,
-                            bool cacheWrite,
-                            bool cacheVerbose,
-                            const char *userConfig,
-                            CacheOutputFunc outputFunc)
-{
-    g_plugin = std::make_shared<netcache>(outputFunc);
-    return g_plugin->init(cachePath, cacheRead, cacheWrite, cacheVerbose, userConfig);
-}
-
-extern "C" void CacheShutdown()
-{
-    g_plugin.reset();
-}
-
-extern "C" bool CachePublish(char const *cacheId, const void *data, size_t dataSize)
-{
-    return g_plugin->publish(cacheId, data, dataSize);
-}
-
-extern "C" bool CacheRetrieve(char const *cacheId, void * &data, size_t &dataSize)
-{
-    return g_plugin->retrieve(cacheId, data, dataSize);
-}
-
-extern "C" void CacheFreeMemory(void *data, size_t /*dataSize*/)
-{
-    return g_plugin->free_memory(data);
-}
