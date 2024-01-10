@@ -116,15 +116,15 @@ public:
 #endif
 
         output("testing connection to {}", proto + server + port + m_root.generic_string());
-        auto ret = m_client->options(m_root);
-        if (ret.error() != httplib::Error::Success)
+        auto res = m_client->options(m_root);
+        if (res.error() != httplib::Error::Success)
         {
-            output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(ret.error()));
+            output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(res.error()));
             return false;
         }
-        else if (ret->status != httplib::StatusCode::OK_200)
+        else if (res->status != httplib::StatusCode::OK_200)
         {
-            output("cannot access {} (Status {}), disabling cache", cachePath, ret->status);
+            output("cannot access {} (Status {}), disabling cache", cachePath, res->status);
             return false;
         }
 
