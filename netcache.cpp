@@ -41,6 +41,7 @@
 #include <regex>  // for std::regex_match()
 #include <string> // for std::string
 #include <algorithm> // for std::ranges::replace()
+#include <filesystem> // for std::filesystem::path
 #include <unordered_map> // for std::unordered_map
 
 //
@@ -64,24 +65,26 @@ public:
     // Initialise the network cache plugin
     bool init(char const *cachePath, bool cacheRead, bool cacheWrite, bool cacheVerbose, char const *userConfig)
     {
-        static auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
-                                              std::regex_constants::icase);
-        static auto match_http = std::regex("^(https?://)([^/]*)(.*[^/])/*$");
+        auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
+                                       std::regex_constants::icase);
+        auto match_http = std::regex("^(https?://)([^/:]*)(:[0-9]+)?(.*[^/])/*$");
 
         std::cmatch m;
         // Split the cache path into protocol (HTTP/HTTPS), server, and path (without trailing slash)
         if (std::regex_match(cachePath, m, match_webdav))
         {
-            m_proto = m[2].str().size() ? "https://" : "http://";
+            m_proto = m[2].str().empty() ? "http://" : "https://";
             m_server = m[1].str();
-            m_prefix = m[3].str();
-            std::ranges::replace(m_prefix, '\\', '/');
+            m_port = m[3].str();
+            std::ranges::replace(m_port, '@', ':');
+            m_root = std::filesystem::path(m[4].str());
         }
         else if (std::regex_match(cachePath, m, match_http))
         {
             m_proto = m[1].str();
             m_server = m[2].str();
-            m_prefix = m[3].str();
+            m_port = m[3].str();
+            m_root = std::filesystem::path(m[4].str());
         }
         else
         {
@@ -90,7 +93,8 @@ public:
         }
 
         // Attempt to connect and possibly authenticate to check that everything is working
-        auto ret = http_client()->Options(m_prefix);
+        output("testing connection to {}", m_proto + m_server + m_port + m_root.generic_string());
+        auto ret = http_client()->Options(m_root.generic_string());
         if (ret.error() != httplib::Error::Success)
         {
             output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(ret.error()));
@@ -109,7 +113,7 @@ public:
     // Publish a cache entry
     bool publish(char const *cacheId, const void *data, size_t dataSize)
     {
-        auto res = http_client()->Put(shard(cacheId), static_cast<char const *>(data),
+        auto res = http_client()->Put(shard(cacheId).generic_string(), static_cast<char const *>(data),
                                       dataSize, "application/octet-stream");
         if (res->status != httplib::StatusCode::Created_201)
         {
@@ -122,7 +126,7 @@ public:
     // Retrieve a cache entry
     bool retrieve(char const *cacheId, void * &data, size_t &dataSize)
     {
-        auto res = http_client()->Get(shard(cacheId));
+        auto res = http_client()->Get(shard(cacheId).generic_string());
         if (res->status != httplib::StatusCode::OK_200)
         {
             return false;
@@ -153,7 +157,7 @@ protected:
         if (it != m_web_clients.end())
             return it->second;
 
-        auto client = std::make_shared<httplib::Client>(m_proto + m_server);
+        auto client = std::make_shared<httplib::Client>(m_proto + m_server + m_port);
         client->set_default_headers({
             { "User-Agent", std::format("FASTBuild-NetCache/{}", VERSION) },
         });
@@ -196,13 +200,15 @@ protected:
     }
 
     // Convert a cacheId value to a full path on the server
-    std::string shard(char const *cacheId)
+    std::filesystem::path shard(char const *cacheId)
     {
-        return std::format("{}/{:.2s}/{:.2s}/{}", m_prefix, cacheId, cacheId + 2, cacheId);
+        return m_root / std::string(cacheId, 2) / std::string(cacheId + 2, 2) / cacheId;
     }
 
+private:
     // Network cache information: protocol, server name, path prefix
-    std::string m_proto, m_server, m_prefix;
+    std::string m_proto, m_server, m_port;
+    std::filesystem::path m_root;
 
     // Network cache credentials, if any
     std::string m_user, m_pass;
