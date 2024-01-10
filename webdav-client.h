@@ -42,22 +42,46 @@ public:
     {
     }
 
+    // Send an HTTP OPTIONS request, to test the connection.
     httplib::Result options(std::filesystem::path const &path)
     {
-        return get()->Options(path.generic_string());
+        return get_client()->Options(path.generic_string());
     }
 
+    // Send an HTTP GET request, to retrieve a file from the remote server.
     httplib::Result get(std::filesystem::path const &path)
     {
-        return get()->Get(path.generic_string());
+        return get_client()->Get(path.generic_string());
     }
 
+    // Send an HTTP PUT request, to store a file on the remote server.
     httplib::Result put(std::filesystem::path const &path, void const *data, size_t size)
     {
-        return get()->Put(path.generic_string(), static_cast<char const *>(data), size,
-                          "application/octet-stream");
+        return get_client()->Put(path.generic_string(), static_cast<char const *>(data),
+                                 size, "application/octet-stream");
     }
 
+    // Send a WebDAV PROPFIND request, to get information about a directory.
+    // The depth argument can only be 0, 1, or infinity.
+    httplib::Result propfind(std::filesystem::path const &path, std::string const &depth)
+    {
+        httplib::Request req;
+        req.method = "PROPFIND";
+        req.path = path.generic_string() + "/";
+        req.headers.insert({"Depth", depth});
+        return get_client()->send(std::move(req));
+    }
+
+    // Send a WebDAV MKCOL request, to create a directory.
+    httplib::Result mkcol(std::filesystem::path const &path)
+    {
+        httplib::Request req;
+        req.method = "MKCOL";
+        req.path = path.generic_string();
+        return get_client()->send(std::move(req));
+    }
+
+    // Set a username and a password for all subsequent HTTP connections.
     void set_basic_auth(std::string const &user, std::string const &pass)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
@@ -71,7 +95,7 @@ public:
 
 protected:
     // Return the current thread’s web client, or create one if necessary
-    std::shared_ptr<httplib::Client> get()
+    std::shared_ptr<httplib::Client> get_client()
     {
         auto it = m_pool.find(std::this_thread::get_id());
         if (it != m_pool.end())
