@@ -2,7 +2,7 @@
 # this is really a proof of concept for now
 VERSION = 0.0.2
 
-SRC = netcache.cpp
+SRC = netcache.cpp webdav-client.h
 DLL = FBuild-NetCache.dll
 ZIP = fastbuild-netcache-$(VERSION)_windows-x64.zip
 
@@ -12,18 +12,18 @@ CXXFLAGS = -std=c++20 -Os
 LDFLAGS = -static
 LIBS = -lssl -lcrypto -lws2_32 -lcrypt32
 
-OBJ = $(SRC:.cpp=.o)
+OBJ = $(patsubst %.cpp, %.o, $(filter %.cpp, $(SRC)))
 
 all: $(ZIP)
 
 $(ZIP): $(DLL)
 	zip $@ $^
 
-.o: .cpp
-	$(CXX) $(CXXFLAGS) $^ -o $@ -c $(CPPFLAGS) $(INCLUDES)
-
 $(DLL): $(OBJ)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS) -shared
+
+%.o: %.cpp $(filter %.h, $(SRC))
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS) $(INCLUDES)
 
 clean:
 	-rm -f $(OBJ) $(DLL) $(ZIP)
