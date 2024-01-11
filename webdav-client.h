@@ -46,20 +46,29 @@ public:
     // Send an HTTP OPTIONS request, to test the connection.
     httplib::Result options(std::filesystem::path const &path)
     {
-        return get_client()->Options(path.generic_string());
+        return wrap_request([&](httplib::Client &client)
+        {
+            return client.Options(path.generic_string());
+        });
     }
 
     // Send an HTTP GET request, to retrieve a file from the remote server.
     httplib::Result get(std::filesystem::path const &path)
     {
-        return get_client()->Get(path.generic_string());
+        return wrap_request([&](httplib::Client &client)
+        {
+            return client.Get(path.generic_string());
+        });
     }
 
     // Send an HTTP PUT request, to store a file on the remote server.
     httplib::Result put(std::filesystem::path const &path, void const *data, size_t size)
     {
-        return get_client()->Put(path.generic_string(), static_cast<char const *>(data),
-                                 size, "application/octet-stream");
+        return wrap_request([&](httplib::Client &client)
+        {
+            return client.Put(path.generic_string(), static_cast<char const *>(data),
+                              size, "application/octet-stream");
+        });
     }
 
     // Send a WebDAV PROPFIND request, to get information about a directory.
@@ -68,9 +77,12 @@ public:
     {
         httplib::Request req;
         req.method = "PROPFIND";
-        req.path = path.generic_string() + "/";
+        req.path = path.generic_string();
         req.headers.insert({"Depth", depth});
-        return get_client()->send(std::move(req));
+        return wrap_request([&](httplib::Client &client)
+        {
+            return client.send(std::move(req));
+        });
     }
 
     // Send a WebDAV MKCOL request, to create a directory.
@@ -79,22 +91,32 @@ public:
         httplib::Request req;
         req.method = "MKCOL";
         req.path = path.generic_string();
-        return get_client()->send(std::move(req));
+        return wrap_request([&](httplib::Client &client)
+        {
+            return client.send(std::move(req));
+        });
     }
 
     // Set a username and a password for all subsequent HTTP connections.
     void set_basic_auth(std::string const &user, std::string const &pass)
     {
-        std::unique_lock<std::mutex> lock(m_mutex);
-
         m_user = user;
         m_pass = pass;
-
-        for (auto &kv : m_pool)
-            kv.second->set_basic_auth(m_user, m_pass);
     }
 
 protected:
+    httplib::Result wrap_request(std::function<httplib::Result(httplib::Client &)> fn)
+    {
+        auto client = get_client();
+        auto res = fn(*client);
+        if (res->status == httplib::StatusCode::Unauthorized_401)
+        {
+            client->set_basic_auth(m_user, m_pass);
+            res = fn(*client);
+        }
+        return res;
+    }
+
     // Return the current thread’s web client, or create one if necessary
     std::shared_ptr<httplib::Client> get_client()
     {
@@ -106,7 +128,6 @@ protected:
         client->set_default_headers({
             { "User-Agent", std::format("FASTBuild-NetCache/{}", VERSION) },
         });
-        client->set_basic_auth(m_user, m_pass);
 
         std::unique_lock<std::mutex> lock(m_mutex);
         m_pool.insert({std::this_thread::get_id(), client}).second;
@@ -123,6 +144,6 @@ private:
     // Per-thread collection of web clients
     std::unordered_map<std::thread::id, std::shared_ptr<httplib::Client>> m_pool;
 
-    // Protect m_user, m_pass, and m_pool against concurrent writes
+    // Protect m_pool against concurrent writes
     std::mutex m_mutex;
 };
