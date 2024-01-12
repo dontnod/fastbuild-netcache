@@ -6,7 +6,7 @@ SRC = plugin.cpp netcache.h webdav-client.h
 DLL = FBuild-NetCache.dll
 ZIP = fastbuild-netcache-$(VERSION)_windows-x64.zip
 
-CPPFLAGS = -Wall -DVERSION=\"$(VERSION)\"
+CPPFLAGS = -Wall -Wextra -DVERSION=\"$(VERSION)\"
 INCLUDES = -I3rdparty
 CXXFLAGS = -std=c++20 -Os
 LDFLAGS = -static

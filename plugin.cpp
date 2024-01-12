@@ -44,14 +44,14 @@ static std::shared_ptr<netcache> g_plugin;
 //
 
 extern "C" bool CacheInitEx(const char *cachePath,
-                            bool cacheRead,
-                            bool cacheWrite,
-                            bool cacheVerbose,
-                            const char *userConfig,
+                            bool /* cacheRead */,
+                            bool /* cacheWrite */,
+                            bool /* cacheVerbose */,
+                            const char * /* userConfig */,
                             CacheOutputFunc outputFunc)
 {
     g_plugin = std::make_shared<netcache>(outputFunc);
-    return g_plugin->init(cachePath, cacheRead, cacheWrite, cacheVerbose, userConfig);
+    return g_plugin->init(cachePath);
 }
 
 extern "C" void CacheShutdown()

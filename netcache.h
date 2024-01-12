@@ -53,7 +53,7 @@ public:
     {}
 
     // Initialise the network cache plugin
-    bool init(char const *cachePath, bool cacheRead, bool cacheWrite, bool cacheVerbose, char const *userConfig)
+    bool init(char const *cachePath)
     {
         auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
                                        std::regex_constants::icase);

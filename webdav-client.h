@@ -130,7 +130,7 @@ protected:
         });
 
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_pool.insert({std::this_thread::get_id(), client}).second;
+        m_pool.insert({std::this_thread::get_id(), client});
         return client;
     }
 
