@@ -3,30 +3,48 @@
 VERSION = 0.0.2
 
 SRC = plugin.cpp netcache.h webdav-client.h
-DLL = FBuild-NetCache.dll
-ZIP = fastbuild-netcache-$(VERSION)_windows-x64.zip
+BINARY = FBuild-NetCache$(LIB_SUFFIX)
+PACKAGE = fastbuild-netcache-$(VERSION)_$(PLATFORM)-x64$(PKG_SUFFIX)
+
+ifeq ($(OS),Windows_NT)
+PLATFORM = windows
+LIB_SUFFIX = .dll
+PKG_SUFFIX = .zip
+ARCHIVE = zip
+else
+PLATFORM = linux
+LIB_SUFFIX = .so
+PKG_SUFFIX = .tar.gz
+ARCHIVE = tar czf
+endif
 
 CPPFLAGS = -Wall -Wextra -DVERSION=\"$(VERSION)\"
-INCLUDES = -I3rdparty
 CXXFLAGS = -std=c++20 -Os
-LDFLAGS = -static
-LIBS = -lssl -lcrypto -lws2_32 -lcrypt32
+INCLUDES = -I3rdparty
+LIBS = -lssl -lcrypto
+
+ifeq ($(OS),Windows_NT)
+LIBS += -lws2_32 -lcrypt32
+LDFLAGS += -static
+else
+CXXFLAGS += -fPIC
+endif
 
 OBJ = $(patsubst %.cpp, %.o, $(filter %.cpp, $(SRC)))
 
-all: $(ZIP)
+all: $(PACKAGE)
 
-$(ZIP): $(DLL)
-	zip $@ $^
+$(PACKAGE): $(BINARY)
+	$(ARCHIVE) $@ $^
 
-$(DLL): $(OBJ)
+$(BINARY): $(OBJ)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS) -shared
 
 %.o: %.cpp $(filter %.h, $(SRC))
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS) $(INCLUDES)
 
 clean:
-	-rm -f $(OBJ) $(DLL) $(ZIP)
+	-rm -f $(OBJ) $(BINARY) $(PACKAGE)
 
 # TODO: this may be used if we don’t want to depend on mingw64
 #   winget install FireDaemon.OpenSSL
