@@ -134,7 +134,13 @@ public:
     // Publish a cache entry
     bool publish(char const *cacheId, const void *data, size_t dataSize)
     {
-        auto res = m_client->put(shard(cacheId), data, dataSize);
+        auto path = shard(cacheId);
+        if (!ensure_directory(path.parent_path()))
+        {
+            return false;
+        }
+
+        auto res = m_client->put(path, data, dataSize);
         if (res->status != httplib::StatusCode::Created_201)
         {
             return false;
@@ -174,6 +180,23 @@ protected:
     template<typename... T> void output(std::format_string<T...> const &fmt, T&&... args)
     {
         m_output_func((" - NetCache: " + std::format(fmt, std::forward<T>(args)...)).c_str());
+    }
+
+    // Ensure that a given remote directory exists
+    bool ensure_directory(std::filesystem::path path)
+    {
+        // Return true if the directory exists
+        auto res = m_client->propfind(path, "0");
+        if (res->status == httplib::StatusCode::MultiStatus_207)
+        {
+            return true;
+        }
+
+        // Otherwise, try to create it, but only after ensuring the parent directory exists
+        return res->status == httplib::StatusCode::NotFound_404
+                && path.has_parent_path()
+                && ensure_directory(path.parent_path())
+                && m_client->mkcol(path)->status == httplib::StatusCode::Created_201;
     }
 
     // Convert a cacheId value to a full path on the server

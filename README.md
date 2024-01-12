@@ -7,6 +7,5 @@ This project uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) as its H
 
 ### To do / missing features
 
- - create subdirectories on the backend
  - check for concurrent writes correctness
  - test framework
