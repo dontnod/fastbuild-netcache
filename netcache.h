@@ -116,7 +116,7 @@ public:
         // Attempt to connect and possibly authenticate to check that everything is working
         output("testing connection to {}", proto + server + port + m_root.generic_string());
         auto res = m_client->options(m_root);
-        if (res.error() != httplib::Error::Success)
+        if (!res)
         {
             output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(res.error()));
             return false;
@@ -141,7 +141,7 @@ public:
         }
 
         auto res = m_client->put(path, data, dataSize);
-        if (res->status != httplib::StatusCode::Created_201)
+        if (!res || res->status != httplib::StatusCode::Created_201)
         {
             return false;
         }
@@ -153,7 +153,7 @@ public:
     bool retrieve(char const *cacheId, void * &data, size_t &dataSize)
     {
         auto res = m_client->get(shard(cacheId));
-        if (res->status != httplib::StatusCode::OK_200)
+        if (!res || res->status != httplib::StatusCode::OK_200)
         {
             return false;
         }
@@ -187,16 +187,20 @@ protected:
     {
         // Return true if the directory exists
         auto res = m_client->propfind(path, "0");
-        if (res->status == httplib::StatusCode::MultiStatus_207)
+        if (res && res->status == httplib::StatusCode::MultiStatus_207)
         {
             return true;
         }
 
         // Otherwise, try to create it, but only after ensuring the parent directory exists
-        return res->status == httplib::StatusCode::NotFound_404
-                && path.has_parent_path()
-                && ensure_directory(path.parent_path())
-                && m_client->mkcol(path)->status == httplib::StatusCode::Created_201;
+        if (res && res->status == httplib::StatusCode::NotFound_404
+                && path.has_parent_path() && ensure_directory(path.parent_path()))
+        {
+            res = m_client->mkcol(path);
+            return res && res->status == httplib::StatusCode::Created_201;
+        }
+
+        return false;
     }
 
     // Convert a cacheId value to a full path on the server

@@ -109,7 +109,7 @@ protected:
     {
         auto client = get_client();
         auto res = fn(*client);
-        if (res->status == httplib::StatusCode::Unauthorized_401)
+        if (res && res->status == httplib::StatusCode::Unauthorized_401)
         {
             client->set_basic_auth(m_user, m_pass);
             res = fn(*client);
