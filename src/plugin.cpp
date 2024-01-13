@@ -26,7 +26,7 @@
 #elif __linux__
 #   define __LINUX__ 1
 #endif
-#include "CachePluginInterface.h"
+#include <CachePluginInterface.h>
 
 #include <memory> // for std::shared_ptr
 

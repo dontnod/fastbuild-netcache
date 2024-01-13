@@ -2,7 +2,9 @@
 # this is really a proof of concept for now
 VERSION = 0.1
 
-SRC = src/plugin.cpp src/netcache.h src/webdav-client.h
+SRC = src/plugin.cpp \
+      src/netcache.cpp src/netcache.h \
+      src/webdav-client.cpp src/webdav-client.h
 LIB = FBuild-NetCache$(LIB_SUFFIX)
 PACKAGE = fastbuild-netcache-$(VERSION)_$(PLATFORM)-x64$(PKG_SUFFIX)
 
