@@ -22,7 +22,7 @@
 //
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "3rdparty/cpp-httplib/httplib.h"
+#include "httplib.h"
 
 #include <format> // for std::format()
 #include <memory> // for std::shared_ptr

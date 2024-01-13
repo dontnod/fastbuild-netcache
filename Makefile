@@ -2,7 +2,7 @@
 # this is really a proof of concept for now
 VERSION = 0.1
 
-SRC = plugin.cpp netcache.h webdav-client.h
+SRC = src/plugin.cpp src/netcache.h src/webdav-client.h
 LIB = FBuild-NetCache$(LIB_SUFFIX)
 PACKAGE = fastbuild-netcache-$(VERSION)_$(PLATFORM)-x64$(PKG_SUFFIX)
 
@@ -21,7 +21,8 @@ endif
 
 CPPFLAGS = -Wall -Wextra -DVERSION=\"$(VERSION)\"
 CXXFLAGS = -std=c++20 -Os
-INCLUDES = -I3rdparty
+INCLUDES = -I3rdparty/fastbuild/Code/Tools/FBuild/FBuildCore/Cache \
+           -I3rdparty/cpp-httplib
 LIBS = -lssl -lcrypto
 
 ifeq ($(OS),Windows_NT)
@@ -43,7 +44,8 @@ $(PACKAGE): $(LIB)
 $(LIB): $(OBJ)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS) -shared
 
-%.o: %.cpp $(filter %.h, $(SRC))
+%.o: $(filter %.h, $(SRC))
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS) $(INCLUDES)
 
 clean:

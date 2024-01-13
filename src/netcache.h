@@ -22,7 +22,7 @@
 //
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "3rdparty/cpp-httplib/httplib.h"
+#include "httplib.h"
 
 #if _WIN32
 #   include <wincred.h>      // for CredReadA()

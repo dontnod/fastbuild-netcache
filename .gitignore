@@ -1,3 +1,9 @@
+.vs
+
 *.dll
+*.pdb
 *.so
 *.o
+
+*.tar.gz
+*.zip
