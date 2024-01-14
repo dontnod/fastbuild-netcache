@@ -39,6 +39,13 @@
 
 static std::shared_ptr<netcache> g_plugin;
 
+// Convert a cache ID to a sharded filesystem path
+
+static std::filesystem::path id_to_path(char const *cacheId)
+{
+    return std::filesystem::path(std::string(cacheId, 2)) / std::string(cacheId + 2, 2) / cacheId;
+}
+
 //
 // FASTBuild cache plugin API implementation
 //
@@ -61,12 +68,12 @@ extern "C" void CacheShutdown()
 
 extern "C" bool CachePublish(char const *cacheId, const void *data, size_t dataSize)
 {
-    return g_plugin->publish(cacheId, data, dataSize);
+    return g_plugin->publish(id_to_path(cacheId), data, dataSize);
 }
 
 extern "C" bool CacheRetrieve(char const *cacheId, void * &data, size_t &dataSize)
 {
-    return g_plugin->retrieve(cacheId, data, dataSize);
+    return g_plugin->retrieve(id_to_path(cacheId), data, dataSize);
 }
 
 extern "C" void CacheFreeMemory(void *data, size_t /*dataSize*/)

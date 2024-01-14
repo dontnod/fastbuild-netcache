@@ -34,16 +34,16 @@
 #include "netcache.h"
 #include "webdav-client.h"
 
-bool netcache::init(char const *cachePath)
+bool netcache::init(std::string const &cache_root)
 {
     auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
                                    std::regex_constants::icase);
     auto match_http = std::regex("^(https?://)([^/:]*)(:[0-9]+)?(.*[^/])/*$");
 
     std::string proto, server, port;
-    std::cmatch m;
+    std::smatch m;
     // Split the cache path into protocol (HTTP/HTTPS), server, and path (without trailing slash)
-    if (std::regex_match(cachePath, m, match_webdav))
+    if (std::regex_match(cache_root, m, match_webdav))
     {
         proto = m[2].str().empty() ? "http://" : "https://";
         server = m[1].str();
@@ -51,7 +51,7 @@ bool netcache::init(char const *cachePath)
         std::ranges::replace(port, '@', ':');
         m_root = std::filesystem::path(m[4].str());
     }
-    else if (std::regex_match(cachePath, m, match_http))
+    else if (std::regex_match(cache_root, m, match_http))
     {
         proto = m[1].str();
         server = m[2].str();
@@ -60,7 +60,7 @@ bool netcache::init(char const *cachePath)
     }
     else
     {
-        output("unrecognised URL format {}, disabling netcache", cachePath);
+        output("unrecognised URL format {}, disabling netcache", cache_root);
         return false;
     }
 
@@ -99,28 +99,27 @@ bool netcache::init(char const *cachePath)
     auto res = m_client->options(m_root);
     if (!res)
     {
-        output("cannot query {} ({}), disabling cache", cachePath, httplib::to_string(res.error()));
+        output("cannot query {} ({}), disabling cache", cache_root, httplib::to_string(res.error()));
         return false;
     }
     else if (res->status != httplib::StatusCode::OK_200)
     {
-        output("cannot access {} (Status {}), disabling cache", cachePath, res->status);
+        output("cannot access {} (Status {}), disabling cache", cache_root, res->status);
         return false;
     }
 
-    output("initialised cache for {}", cachePath);
+    output("initialised cache for {}", cache_root);
     return true;
 }
 
-bool netcache::publish(char const *cacheId, const void *data, size_t dataSize)
+bool netcache::publish(std::filesystem::path const &path, const void *data, size_t dataSize)
 {
-    auto path = shard(cacheId);
     if (!ensure_directory(path.parent_path()))
     {
         return false;
     }
 
-    auto res = m_client->put(path, data, dataSize);
+    auto res = m_client->put(m_root / path, data, dataSize);
     if (!res || res->status != httplib::StatusCode::Created_201)
     {
         return false;
@@ -129,9 +128,9 @@ bool netcache::publish(char const *cacheId, const void *data, size_t dataSize)
     return true;
 }
 
-bool netcache::retrieve(char const *cacheId, void * &data, size_t &dataSize)
+bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize)
 {
-    auto res = m_client->get(shard(cacheId));
+    auto res = m_client->get(m_root / path);
     if (!res || res->status != httplib::StatusCode::OK_200)
     {
         return false;
@@ -156,7 +155,7 @@ void netcache::free_memory(void *data)
 bool netcache::ensure_directory(std::filesystem::path path)
 {
     // Return true if the directory exists
-    auto res = m_client->propfind(path, "0");
+    auto res = m_client->propfind(m_root / path, "0");
     if (res && res->status == httplib::StatusCode::MultiStatus_207)
     {
         return true;
@@ -166,14 +165,9 @@ bool netcache::ensure_directory(std::filesystem::path path)
     if (res && res->status == httplib::StatusCode::NotFound_404
             && path.has_parent_path() && ensure_directory(path.parent_path()))
     {
-        res = m_client->mkcol(path);
+        res = m_client->mkcol(m_root / path);
         return res && res->status == httplib::StatusCode::Created_201;
     }
 
     return false;
-}
-
-std::filesystem::path netcache::shard(char const *cacheId)
-{
-    return m_root / std::string(cacheId, 2) / std::string(cacheId + 2, 2) / cacheId;
 }

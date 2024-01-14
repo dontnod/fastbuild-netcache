@@ -41,13 +41,13 @@ public:
     {}
 
     // Initialise the network cache plugin
-    bool init(char const *cachePath);
+    bool init(std::string const &cache_root);
 
     // Publish a cache entry
-    bool publish(char const *cacheId, const void *data, size_t dataSize);
+    bool publish(std::filesystem::path const &path, const void *data, size_t dataSize);
 
     // Retrieve a cache entry
-    bool retrieve(char const *cacheId, void * &data, size_t &dataSize);
+    bool retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize);
 
     // Free memory allocated by a previous retrieve() call
     void free_memory(void *data);
@@ -61,9 +61,6 @@ protected:
 
     // Ensure that a given remote directory exists
     bool ensure_directory(std::filesystem::path path);
-
-    // Convert a cacheId value to a full path on the server
-    std::filesystem::path shard(char const *cacheId);
 
 private:
     // Path to the cache root on the server
