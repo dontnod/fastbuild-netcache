@@ -30,6 +30,7 @@
 
 #include <memory> // for std::shared_ptr
 
+#include "filecache.h"
 #include "netcache.h"
 
 // Global variable storing the cache plugin data; the current API does not allow
@@ -58,8 +59,15 @@ extern "C" bool CacheInitEx(const char *cachePath,
 {
     g_output_func = outputFunc;
 
+    // Try to initialise a network cache, or fall back to a file cache
     g_plugin = std::make_shared<netcache>();
-    return g_plugin->init(cachePath);
+    if (!g_plugin->init(cachePath))
+    {
+        g_plugin = std::make_shared<filecache>();
+        return g_plugin->init(cachePath);
+    }
+
+    return true;
 }
 
 extern "C" void CacheShutdown()

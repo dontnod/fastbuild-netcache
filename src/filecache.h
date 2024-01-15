@@ -31,17 +31,17 @@
 #include "datastore.h"
 
 //
-// The network cache class
+// The file cache class
 //
 
-class netcache : public plugin
+class filecache : public plugin
 {
 public:
-    // Initialise the network cache plugin
+    // Initialise the file cache plugin
     virtual bool init(std::string const &cache_root);
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, const void *data, size_t data_size);
+    virtual bool publish(std::filesystem::path const &path, void const *data, size_t data_size);
 
     // Retrieve a cache entry
     virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &data_size);
@@ -49,17 +49,10 @@ public:
     // Free memory allocated by a previous retrieve() call
     virtual void free_memory(void *data);
 
-protected:
-    // Ensure that a given remote directory exists
-    bool ensure_directory(std::filesystem::path path);
-
 private:
-    // Path to the cache root on the server
+    // Path to the cache root
     std::filesystem::path m_root;
 
-    // HTTP/WebDAV client
-    std::shared_ptr<class webdav_client> m_client;
-
     // Tracked resources
-    datastore<std::string> m_datastore;
+    datastore<std::vector<char>> m_datastore;
 };

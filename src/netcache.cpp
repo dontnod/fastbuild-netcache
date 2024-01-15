@@ -60,7 +60,7 @@ bool netcache::init(std::string const &cache_root)
     }
     else
     {
-        plugin::log("unrecognised URL format {}, disabling netcache", cache_root);
+        plugin::log("unrecognised URL format {}", cache_root);
         return false;
     }
 
@@ -99,27 +99,27 @@ bool netcache::init(std::string const &cache_root)
     auto res = m_client->options(m_root);
     if (!res)
     {
-        plugin::log("cannot query {} ({}), disabling cache", cache_root, httplib::to_string(res.error()));
+        plugin::log("cannot query {} ({})", cache_root, httplib::to_string(res.error()));
         return false;
     }
     else if (res->status != httplib::StatusCode::OK_200)
     {
-        plugin::log("cannot access {} (Status {}), disabling cache", cache_root, res->status);
+        plugin::log("cannot access {} (Status {})", cache_root, res->status);
         return false;
     }
 
-    plugin::log("initialised cache for {}", cache_root);
+    plugin::log("initialised network cache for {}", cache_root);
     return true;
 }
 
-bool netcache::publish(std::filesystem::path const &path, const void *data, size_t dataSize)
+bool netcache::publish(std::filesystem::path const &path, const void *data, size_t data_size)
 {
     if (!ensure_directory(path.parent_path()))
     {
         return false;
     }
 
-    auto res = m_client->put(m_root / path, data, dataSize);
+    auto res = m_client->put(m_root / path, data, data_size);
     if (!res || res->status != httplib::StatusCode::Created_201)
     {
         return false;
@@ -128,7 +128,7 @@ bool netcache::publish(std::filesystem::path const &path, const void *data, size
     return true;
 }
 
-bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize)
+bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t &data_size)
 {
     auto res = m_client->get(m_root / path);
     if (!res || res->status != httplib::StatusCode::OK_200)
@@ -136,7 +136,7 @@ bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t 
         return false;
     }
 
-    dataSize = res->body.size();
+    data_size = res->body.size();
     data = m_datastore.add(std::move(res->body));
     return data != nullptr;
 }

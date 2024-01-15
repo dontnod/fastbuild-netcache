@@ -4,6 +4,7 @@ VERSION = 0.1
 
 SRC = src/plugin.cpp src/plugin.h \
       src/datastore.h \
+      src/filecache.cpp src/filecache.h \
       src/netcache.cpp src/netcache.h \
       src/webdav-client.cpp src/webdav-client.h
 LIB = FBuild-NetCache$(LIB_SUFFIX)
