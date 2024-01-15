@@ -24,42 +24,32 @@
 #pragma once
 
 #include <memory> // for std::shared_ptr
-#include <string> // for std::string
-#include <filesystem> // for std::filesystem::path
+#include <mutex>  // for std::mutex
+#include <unordered_map> // for std::unordered_map
 
-#include "plugin.h"
-#include "datastore.h"
-
-//
-// The network cache class
-//
-
-class netcache : public plugin
+template<typename T> class datastore
 {
 public:
-    // Initialise the network cache plugin
-    virtual bool init(std::string const &cache_root);
+    // Keep track of a resource (typically std::string or std::vector) and return
+    // its data pointer for later releasing
+    void *add(T &&s)
+    {
+        auto p = std::make_shared<T>(s);
+        std::unique_lock<std::mutex> lock(m_mutex);
+        return m_data.insert({p->data(), p}).second ? p->data() : nullptr;
+    }
 
-    // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, const void *data, size_t dataSize);
-
-    // Retrieve a cache entry
-    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize);
-
-    // Free memory allocated by a previous retrieve() call
-    virtual void free_memory(void *data);
+    // Release a resource identified by its data pointer
+    void remove(void *data)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_data.erase(data);
+    }
 
 protected:
-    // Ensure that a given remote directory exists
-    bool ensure_directory(std::filesystem::path path);
+    // Map of tracked resources
+    std::unordered_map<void *, std::shared_ptr<T>> m_data;
 
-private:
-    // Path to the cache root on the server
-    std::filesystem::path m_root;
-
-    // HTTP/WebDAV client
-    std::shared_ptr<class webdav_client> m_client;
-
-    // Tracked resources
-    datastore<std::string> m_datastore;
+    // Protect m_data against concurrent writes
+    std::mutex m_mutex;
 };

@@ -136,20 +136,14 @@ bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t 
         return false;
     }
 
-    // Wrap the response inside a shared pointer so we can safely store it
-    // in a private map for later releasing.
-    auto body = std::make_shared<std::string>(std::move(res->body));
-    data = body->data();
-    dataSize = body->size();
-
-    std::unique_lock<std::mutex> lock(m_mutex);
-    return m_data.insert({data, body}).second;
+    dataSize = res->body.size();
+    data = m_datastore.add(std::move(res->body));
+    return data != nullptr;
 }
 
 void netcache::free_memory(void *data)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_data.erase(data);
+    m_datastore.remove(data);
 }
 
 bool netcache::ensure_directory(std::filesystem::path path)
