@@ -32,15 +32,14 @@
 
 #include "netcache.h"
 
-//
 // Global variable storing the cache plugin data; the current API does not allow
 // to track a state or a closure, so this has to be global.
-//
+static std::shared_ptr<plugin> g_plugin;
 
-static std::shared_ptr<netcache> g_plugin;
+// Global variable storing the logging function provided by FASTBuild
+std::function<void(char const *)> g_output_func;
 
 // Convert a cache ID to a sharded filesystem path
-
 static std::filesystem::path id_to_path(char const *cacheId)
 {
     return std::filesystem::path(std::string(cacheId, 2)) / std::string(cacheId + 2, 2) / cacheId;
@@ -57,7 +56,9 @@ extern "C" bool CacheInitEx(const char *cachePath,
                             const char * /* userConfig */,
                             CacheOutputFunc outputFunc)
 {
-    g_plugin = std::make_shared<netcache>(outputFunc);
+    g_output_func = outputFunc;
+
+    g_plugin = std::make_shared<netcache>();
     return g_plugin->init(cachePath);
 }
 

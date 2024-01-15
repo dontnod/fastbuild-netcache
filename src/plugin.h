@@ -23,48 +23,39 @@
 
 #pragma once
 
-#include <memory> // for std::shared_ptr
+#include <format> // for std::format()
 #include <string> // for std::string
-#include <thread> // for std::mutex
 #include <functional> // for std::function
 #include <filesystem> // for std::filesystem::path
-#include <unordered_map> // for std::unordered_map
-
-#include "plugin.h"
 
 //
-// The network cache class
+// The abstract plugin class
 //
 
-class netcache : public plugin
+class plugin
 {
 public:
-    // Initialise the network cache plugin
-    virtual bool init(std::string const &cache_root);
+    plugin() = default;
+
+    virtual ~plugin() = default;
+
+    // Initialise the plugin
+    virtual bool init(std::string const &cache_root) = 0;
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, const void *data, size_t dataSize);
+    virtual bool publish(std::filesystem::path const &path, const void *data, size_t dataSize) = 0;
 
     // Retrieve a cache entry
-    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize);
+    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize) = 0;
 
     // Free memory allocated by a previous retrieve() call
-    virtual void free_memory(void *data);
+    virtual void free_memory(void *data) = 0;
 
-protected:
-    // Ensure that a given remote directory exists
-    bool ensure_directory(std::filesystem::path path);
-
-private:
-    // Path to the cache root on the server
-    std::filesystem::path m_root;
-
-    // HTTP/WebDAV client
-    std::shared_ptr<class webdav_client> m_client;
-
-    // Map of response data for resource tracking
-    std::unordered_map<void *, std::shared_ptr<std::string>> m_data;
-
-    // Protect m_data against concurrent writes
-    std::mutex m_mutex;
+    // Output a message using the std::format syntax
+    template<typename... T>
+    static void output(std::format_string<T...> const &fmt, T&&... args)
+    {
+        extern std::function<void(char const *)> g_output_func;
+        g_output_func((" - NetCache: " + std::format(fmt, std::forward<T>(args)...)).c_str());
+    }
 };
