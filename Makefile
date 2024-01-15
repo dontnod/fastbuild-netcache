@@ -1,6 +1,6 @@
 
 # this is really a proof of concept for now
-VERSION = 0.1
+VERSION = 0.2
 
 SRC = src/plugin.cpp src/plugin.h \
       src/datastore.h \
@@ -40,7 +40,9 @@ endif
 
 OBJ = $(patsubst %.cpp, %.o, $(filter %.cpp, $(SRC)))
 
-all: $(PACKAGE)
+all: $(LIB)
+
+dist: $(PACKAGE)
 
 $(PACKAGE): $(LIB)
 	$(ARCHIVE) $@ $^ $(PKG_EXTRA)
