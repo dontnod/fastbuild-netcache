@@ -53,7 +53,7 @@ public:
 
     // Output a message using the std::format syntax
     template<typename... T>
-    static void output(std::format_string<T...> const &fmt, T&&... args)
+    static void log(std::format_string<T...> const &fmt, T&&... args)
     {
         extern std::function<void(char const *)> g_output_func;
         g_output_func((" - NetCache: " + std::format(fmt, std::forward<T>(args)...)).c_str());

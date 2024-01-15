@@ -60,7 +60,7 @@ bool netcache::init(std::string const &cache_root)
     }
     else
     {
-        output("unrecognised URL format {}, disabling netcache", cache_root);
+        plugin::log("unrecognised URL format {}, disabling netcache", cache_root);
         return false;
     }
 
@@ -71,7 +71,7 @@ bool netcache::init(std::string const &cache_root)
     auto pass = std::getenv("FASTBUILD_CACHE_PASSWORD");
     if (user && user[0] && pass && pass[0])
     {
-        output("found environment credentials for user {}", user);
+        plugin::log("found environment credentials for user {}", user);
         m_client->set_basic_auth(user, pass);
     }
 #if _WIN32
@@ -88,27 +88,27 @@ bool netcache::init(std::string const &cache_root)
             WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
                                 (LPSTR)pass.data(), (int)pass.size(), nullptr, nullptr);
 
-            output("found stored credentials for user {}", cred->UserName);
+            plugin::log("found stored credentials for user {}", cred->UserName);
             m_client->set_basic_auth(cred->UserName, pass);
         }
     }
 #endif
 
     // Attempt to connect and possibly authenticate to check that everything is working
-    output("testing connection to {}", proto + server + port + m_root.generic_string());
+    plugin::log("testing connection to {}", proto + server + port + m_root.generic_string());
     auto res = m_client->options(m_root);
     if (!res)
     {
-        output("cannot query {} ({}), disabling cache", cache_root, httplib::to_string(res.error()));
+        plugin::log("cannot query {} ({}), disabling cache", cache_root, httplib::to_string(res.error()));
         return false;
     }
     else if (res->status != httplib::StatusCode::OK_200)
     {
-        output("cannot access {} (Status {}), disabling cache", cache_root, res->status);
+        plugin::log("cannot access {} (Status {}), disabling cache", cache_root, res->status);
         return false;
     }
 
-    output("initialised cache for {}", cache_root);
+    plugin::log("initialised cache for {}", cache_root);
     return true;
 }
 
