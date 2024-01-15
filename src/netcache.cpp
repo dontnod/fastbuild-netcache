@@ -36,13 +36,13 @@
 
 bool netcache::init(std::string const &cache_root)
 {
-    auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*[^\\\\])\\\\*",
+    auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*)",
                                    std::regex_constants::icase);
-    auto match_http = std::regex("^(https?://)([^/:]*)(:[0-9]+)?(.*[^/])/*$");
+    auto match_http = std::regex("^(https?://)([^/:]*)(:[0-9]+)?(.*)$");
 
     std::string proto, server, port;
     std::smatch m;
-    // Split the cache path into protocol (HTTP/HTTPS), server, and path (without trailing slash)
+    // Split the cache path into protocol (HTTP/HTTPS), server, and path
     if (std::regex_match(cache_root, m, match_webdav))
     {
         proto = m[2].str().empty() ? "http://" : "https://";
