@@ -27,6 +27,13 @@ back to a standard filesystem cache location:
 .CachePath = 'C:\Temporary\Cache'
 ```
 
+Multiple cache locations can be specified, separated by a semicolon. When retrieving, each cache
+is queried until data is found. When sending, data is published to all caches.
+
+```
+.CachePath = 'https://secure-server.example.com/cacheroot/;C:\Temporary\Cache'
+```
+
 ## Setup
 
 1. Copy the plugin (`FBuild-NetCache.dll` or `FBuild-NetCache.so`) on each machine that
