@@ -35,21 +35,14 @@
 class cache
 {
 public:
-    cache() = default;
-
-    virtual ~cache() = default;
-
     // Initialise the cache
     virtual bool init(std::string const &cache_root) = 0;
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, const void *data, size_t dataSize) = 0;
+    virtual bool publish(std::filesystem::path const &path, std::string_view data) = 0;
 
     // Retrieve a cache entry
-    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &dataSize) = 0;
-
-    // Free memory allocated by a previous retrieve() call
-    virtual void free_memory(void *data) = 0;
+    virtual std::shared_ptr<std::string> retrieve(std::filesystem::path const &path) = 0;
 
     // Output a message using the std::format syntax
     template<typename... T>

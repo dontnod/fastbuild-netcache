@@ -30,6 +30,7 @@
 
 #include <memory> // for std::shared_ptr
 
+#include "datastore.h"
 #include "filecache.h"
 #include "netcache.h"
 
@@ -45,6 +46,9 @@ static std::filesystem::path id_to_path(char const *cacheId)
 {
     return std::filesystem::path(std::string(cacheId, 2)) / std::string(cacheId + 2, 2) / cacheId;
 }
+
+// Track retrieved data
+datastore<std::string> g_datastore;
 
 //
 // FASTBuild cache plugin API implementation
@@ -75,17 +79,24 @@ extern "C" void CacheShutdown()
     g_plugin.reset();
 }
 
-extern "C" bool CachePublish(char const *cacheId, const void *data, size_t dataSize)
+extern "C" bool CachePublish(char const *cacheId, char const *data, size_t dataSize)
 {
-    return g_plugin->publish(id_to_path(cacheId), data, dataSize);
+    return g_plugin->publish(id_to_path(cacheId), std::string_view(data, data + dataSize));
 }
 
 extern "C" bool CacheRetrieve(char const *cacheId, void * &data, size_t &dataSize)
 {
-    return g_plugin->retrieve(id_to_path(cacheId), data, dataSize);
+    if (auto buffer = g_plugin->retrieve(id_to_path(cacheId)); buffer)
+    {
+        data = buffer->data();
+        dataSize = buffer->size();
+        return g_datastore.add(buffer);
+    }
+
+    return false;
 }
 
 extern "C" void CacheFreeMemory(void *data, size_t /*dataSize*/)
 {
-    return g_plugin->free_memory(data);
+    g_datastore.remove(data);
 }

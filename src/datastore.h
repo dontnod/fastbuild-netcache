@@ -32,11 +32,10 @@ template<typename T> class datastore
 public:
     // Keep track of a resource (typically std::string or std::vector) and return
     // its data pointer for later releasing
-    void *add(T &&s)
+    bool add(std::shared_ptr<T> p)
     {
-        auto p = std::make_shared<T>(s);
         std::unique_lock<std::mutex> lock(m_mutex);
-        return m_data.insert({p->data(), p}).second ? p->data() : nullptr;
+        return m_data.insert({p->data(), p}).second;
     }
 
     // Release a resource identified by its data pointer

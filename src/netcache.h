@@ -28,7 +28,6 @@
 #include <filesystem> // for std::filesystem::path
 
 #include "cache.h"
-#include "datastore.h"
 
 //
 // The network cache class
@@ -41,13 +40,10 @@ public:
     virtual bool init(std::string const &cache_root);
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, const void *data, size_t data_size);
+    virtual bool publish(std::filesystem::path const &path, std::string_view data);
 
     // Retrieve a cache entry
-    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &data_size);
-
-    // Free memory allocated by a previous retrieve() call
-    virtual void free_memory(void *data);
+    virtual std::shared_ptr<std::string> retrieve(std::filesystem::path const &path);
 
 protected:
     // Ensure that a given remote directory exists
@@ -59,7 +55,4 @@ private:
 
     // HTTP/WebDAV client
     std::shared_ptr<class webdav_client> m_client;
-
-    // Tracked resources
-    datastore<std::string> m_datastore;
 };

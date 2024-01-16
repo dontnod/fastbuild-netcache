@@ -39,7 +39,7 @@ bool filecache::init(std::string const &cache_root)
     return true;
 }
 
-bool filecache::publish(std::filesystem::path const &path, void const *data, size_t data_size)
+bool filecache::publish(std::filesystem::path const &path, std::string_view data)
 {
     static std::minstd_rand rand;
 
@@ -62,7 +62,7 @@ bool filecache::publish(std::filesystem::path const &path, void const *data, siz
     }
 
     // Write data; in case of failure, remove the temporary file
-    file.write(static_cast<char const *>(data), data_size);
+    file.write(data.data(), data.length());
     if (file.fail())
     {
         std::filesystem::remove(tmp, ec);
@@ -81,27 +81,21 @@ bool filecache::publish(std::filesystem::path const &path, void const *data, siz
     return true;
 }
 
-bool filecache::retrieve(std::filesystem::path const &path, void * &data, size_t &data_size)
+std::shared_ptr<std::string> filecache::retrieve(std::filesystem::path const &path)
 {
     std::ifstream file(m_root / path, std::ios::in | std::ios::binary);
     if (!file)
     {
-        return false;
+        return nullptr;
     }
 
-    data_size = std::filesystem::file_size(m_root / path);
-    std::vector<char> buffer(data_size);
-    file.read(buffer.data(), data_size);
+    auto size = std::filesystem::file_size(m_root / path);
+    auto buffer = std::make_shared<std::string>(size, '\0');
+    file.read(buffer->data(), size);
     if (file.fail())
     {
-        return false;
+        return nullptr;
     }
 
-    data = m_datastore.add(std::move(buffer));
-    return true;
-}
-
-void filecache::free_memory(void *data)
-{
-    m_datastore.remove(data);
+    return buffer;
 }

@@ -28,7 +28,6 @@
 #include <filesystem> // for std::filesystem::path
 
 #include "cache.h"
-#include "datastore.h"
 
 //
 // The file cache class
@@ -41,18 +40,12 @@ public:
     virtual bool init(std::string const &cache_root);
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, void const *data, size_t data_size);
+    virtual bool publish(std::filesystem::path const &path, std::string_view data);
 
     // Retrieve a cache entry
-    virtual bool retrieve(std::filesystem::path const &path, void * &data, size_t &data_size);
-
-    // Free memory allocated by a previous retrieve() call
-    virtual void free_memory(void *data);
+    virtual std::shared_ptr<std::string> retrieve(std::filesystem::path const &path);
 
 private:
     // Path to the cache root
     std::filesystem::path m_root;
-
-    // Tracked resources
-    datastore<std::vector<char>> m_datastore;
 };

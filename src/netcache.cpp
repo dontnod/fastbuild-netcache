@@ -112,14 +112,14 @@ bool netcache::init(std::string const &cache_root)
     return true;
 }
 
-bool netcache::publish(std::filesystem::path const &path, const void *data, size_t data_size)
+bool netcache::publish(std::filesystem::path const &path, std::string_view data)
 {
     if (!ensure_directory(path.parent_path()))
     {
         return false;
     }
 
-    auto res = m_client->put(m_root / path, data, data_size);
+    auto res = m_client->put(m_root / path, data.data(), data.length());
     if (!res || res->status != httplib::StatusCode::Created_201)
     {
         return false;
@@ -128,22 +128,15 @@ bool netcache::publish(std::filesystem::path const &path, const void *data, size
     return true;
 }
 
-bool netcache::retrieve(std::filesystem::path const &path, void * &data, size_t &data_size)
+std::shared_ptr<std::string> netcache::retrieve(std::filesystem::path const &path)
 {
     auto res = m_client->get(m_root / path);
     if (!res || res->status != httplib::StatusCode::OK_200)
     {
-        return false;
+        return nullptr;
     }
 
-    data_size = res->body.size();
-    data = m_datastore.add(std::move(res->body));
-    return data != nullptr;
-}
-
-void netcache::free_memory(void *data)
-{
-    m_datastore.remove(data);
+    return std::make_shared<std::string>(std::move(res->body));
 }
 
 bool netcache::ensure_directory(std::filesystem::path path)
