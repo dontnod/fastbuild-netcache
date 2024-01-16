@@ -60,7 +60,7 @@ bool netcache::init(std::string const &cache_root)
     }
     else
     {
-        plugin::log("unrecognised URL format {}", cache_root);
+        cache::log("unrecognised URL format {}", cache_root);
         return false;
     }
 
@@ -71,7 +71,7 @@ bool netcache::init(std::string const &cache_root)
     auto pass = std::getenv("FASTBUILD_CACHE_PASSWORD");
     if (user && user[0] && pass && pass[0])
     {
-        plugin::log("found environment credentials for user {}", user);
+        cache::log("found environment credentials for user {}", user);
         m_client->set_basic_auth(user, pass);
     }
 #if _WIN32
@@ -88,27 +88,27 @@ bool netcache::init(std::string const &cache_root)
             WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)cred->CredentialBlob, (int)cred->CredentialBlobSize,
                                 (LPSTR)pass.data(), (int)pass.size(), nullptr, nullptr);
 
-            plugin::log("found stored credentials for user {}", cred->UserName);
+            cache::log("found stored credentials for user {}", cred->UserName);
             m_client->set_basic_auth(cred->UserName, pass);
         }
     }
 #endif
 
     // Attempt to connect and possibly authenticate to check that everything is working
-    plugin::log("testing connection to {}", proto + server + port + m_root.generic_string());
+    cache::log("testing connection to {}", proto + server + port + m_root.generic_string());
     auto res = m_client->options(m_root);
     if (!res)
     {
-        plugin::log("cannot query {} ({})", cache_root, httplib::to_string(res.error()));
+        cache::log("cannot query {} ({})", cache_root, httplib::to_string(res.error()));
         return false;
     }
     else if (res->status != httplib::StatusCode::OK_200)
     {
-        plugin::log("cannot access {} (Status {})", cache_root, res->status);
+        cache::log("cannot access {} (Status {})", cache_root, res->status);
         return false;
     }
 
-    plugin::log("initialised network cache for {}", cache_root);
+    cache::log("initialised network cache for {}", cache_root);
     return true;
 }
 

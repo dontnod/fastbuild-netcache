@@ -2,7 +2,8 @@
 # this is really a proof of concept for now
 VERSION = 0.2
 
-SRC = src/plugin.cpp src/plugin.h \
+SRC = src/plugin.cpp \
+      src/cache.h \
       src/datastore.h \
       src/filecache.cpp src/filecache.h \
       src/netcache.cpp src/netcache.h \

@@ -35,7 +35,7 @@
 
 // Global variable storing the cache plugin data; the current API does not allow
 // to track a state or a closure, so this has to be global.
-static std::shared_ptr<plugin> g_plugin;
+static std::shared_ptr<cache> g_plugin;
 
 // Global variable storing the logging function provided by FASTBuild
 std::function<void(char const *)> g_output_func;

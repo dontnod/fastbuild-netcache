@@ -27,14 +27,14 @@
 #include <string> // for std::string
 #include <filesystem> // for std::filesystem::path
 
-#include "plugin.h"
+#include "cache.h"
 #include "datastore.h"
 
 //
 // The file cache class
 //
 
-class filecache : public plugin
+class filecache : public cache
 {
 public:
     // Initialise the file cache plugin

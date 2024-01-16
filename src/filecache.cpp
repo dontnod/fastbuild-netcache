@@ -31,11 +31,11 @@ bool filecache::init(std::string const &cache_root)
     m_root = std::filesystem::path(cache_root);
     if (!std::filesystem::is_directory(m_root))
     {
-        plugin::log("directory {} does not exist", cache_root);
+        cache::log("directory {} does not exist", cache_root);
         return false;
     }
 
-    plugin::log("initialised file cache for {}", cache_root);
+    cache::log("initialised file cache for {}", cache_root);
     return true;
 }
 

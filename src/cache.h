@@ -29,17 +29,17 @@
 #include <filesystem> // for std::filesystem::path
 
 //
-// The abstract plugin class
+// The abstract cache class
 //
 
-class plugin
+class cache
 {
 public:
-    plugin() = default;
+    cache() = default;
 
-    virtual ~plugin() = default;
+    virtual ~cache() = default;
 
-    // Initialise the plugin
+    // Initialise the cache
     virtual bool init(std::string const &cache_root) = 0;
 
     // Publish a cache entry
