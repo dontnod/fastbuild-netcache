@@ -4,6 +4,16 @@
 This project allows to use an HTTP or WebDAV server as a backend for the
 [FASTBuild](https://github.com/fastbuild/fastbuild) compilation cache.
 
+Features:
+
+ - Windows WebDAV syntax for cache paths
+ - HTTP syntax for cache paths
+ - support standard file-based caches as a fallback
+ - multiple cache locations
+ - support for Windows Credential Manager
+
+### Cache paths
+
 It supports cache paths (through the `.CachePath` setting entry, or through the
 `FASTBUILD_CACHE_PATH` environment variable) in a Windows-like format:
 
@@ -27,12 +37,24 @@ back to a standard filesystem cache location:
 .CachePath = 'C:\Temporary\Cache'
 ```
 
+### Multiple cache locations
+
 Multiple cache locations can be specified, separated by a semicolon. When retrieving, each cache
 is queried until data is found. When sending, data is published to all caches.
 
 ```
 .CachePath = 'https://secure-server.example.com/cacheroot/;C:\Temporary\Cache'
 ```
+
+### Credentials
+
+If the HTTP or WebDAV server requires authentication, credentials can be provided in two ways:
+
+ - stored as environment variables:
+   - `FASTBUILD_CACHE_USERNAME=john`
+   - `FASTBUILD_CACHE_PASSWORD=s3cr3tp4ss`
+ - stored as generic credentials in the Windows Credential Manager:
+   - `cmdkey /generic:server.example.com /user:john /pass:s3cr3tp4ss`
 
 ## Setup
 
@@ -49,16 +71,6 @@ in a non-standard location, the full path to the DLL may have to be specified:
 ```
 .CachePluginDLL = 'C:\ProgramData\FASTBuild\FBuild-NetCache.dll'
 ```
-
-## Access control
-
-If the HTTP or WebDAV server requires authentication, credentials can be provided in two ways:
-
- - stored as environment variables:
-   - `FASTBUILD_CACHE_USERNAME=john`
-   - `FASTBUILD_CACHE_PASSWORD=s3cr3tp4ss`
- - stored as generic credentials in the Windows Credential Manager:
-   - `cmdkey /generic:server.example.com /user:john /pass:s3cr3tp4ss`
 
 ## Build instructions
 
