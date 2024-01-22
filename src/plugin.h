@@ -24,31 +24,48 @@
 #pragma once
 
 #include <memory> // for std::shared_ptr
-#include <mutex>  // for std::mutex
-#include <unordered_map> // for std::unordered_map
+#include <string> // for std::string
+#include <filesystem> // for std::filesystem::path
 
-template<typename T> class datastore
+#include "cache.h"
+
+//
+// The plugin class
+//
+
+class plugin
 {
 public:
-    // Keep track of a resource (typically std::string or std::vector) and return
-    // its data pointer for later releasing
-    bool add(std::shared_ptr<T> p)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        return m_data.insert({p->data(), p}).second;
-    }
+    // Initialise the plugin
+    bool init(std::string const &path);
 
-    // Release a resource identified by its data pointer
-    void remove(void *data)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_data.erase(data);
-    }
+    // Shut down the plugin
+    void shutdown();
+
+    // Publish a cache entry
+    bool publish(std::string const &id, std::string_view data);
+
+    // Retrieve a cache entry
+    bool retrieve(std::string const &id, void * &data, size_t &data_size);
+
+    // Free the memory held by a cache entry
+    void free(void *data);
 
 protected:
+    // Convert a cache ID to a sharded filesystem path
+    static std::filesystem::path id_to_path(std::string const &id)
+    {
+        return std::filesystem::path(id.substr(0, 2)) / id.substr(2, 2) / id;
+    }
+
+    // All the initialised cache backends
+    std::vector<std::shared_ptr<cache>> m_caches;
+
     // Map of tracked resources
-    std::unordered_map<void *, std::shared_ptr<T>> m_data;
+    std::unordered_map<void *, std::shared_ptr<std::string>> m_resources;
 
     // Protect m_data against concurrent writes
     std::mutex m_mutex;
 };
+
+

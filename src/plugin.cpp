@@ -30,29 +30,79 @@
 
 #include <algorithm> // for std::find_if()
 #include <memory>    // for std::shared_ptr
+#include <mutex>     // for std::mutex
 #include <sstream>   // for std::stringstream
 #include <string>    // for std::string, std::getline()
+#include <unordered_map> // for std::unordered_map
 #include <vector>    // for std::vector
 
-#include "datastore.h"
+#include "plugin.h"
 #include "filecache.h"
 #include "netcache.h"
 
-// Global variable storing the cache implementations; the current API does not allow
+// Global variable storing the plugin instance; the current API does not allow
 // to track a state or a closure, so this has to be global.
-static std::vector<std::shared_ptr<cache>> g_caches;
+static plugin g_plugin;
 
 // Global variable storing the logging function provided by FASTBuild
 std::function<void(char const *)> g_output_func;
 
-// Convert a cache ID to a sharded filesystem path
-static std::filesystem::path id_to_path(char const *cacheId)
+bool plugin::init(std::string const &path)
 {
-    return std::filesystem::path(std::string(cacheId, 2)) / std::string(cacheId + 2, 2) / cacheId;
+    std::stringstream ss(path);
+    for (std::string path; std::getline(ss, path, ';'); )
+    {
+        // Try to initialise a network cache, or fall back to a file cache
+        if (auto cache = std::make_shared<netcache>(); cache->init(path))
+        {
+            m_caches.push_back(cache);
+        }
+        else if (auto cache = std::make_shared<filecache>(); cache->init(path))
+        {
+            m_caches.push_back(cache);
+        }
+    }
+
+    // Succeed if at least one cache could be created
+    return !m_caches.empty();
 }
 
-// Track retrieved data
-datastore<std::string> g_datastore;
+void plugin::shutdown()
+{
+    m_caches.clear();
+}
+
+bool plugin::publish(std::string const &id, std::string_view data)
+{
+    // Publish to all caches
+    return std::all_of(m_caches.begin(), m_caches.end(), [&](auto &cache) {
+        return cache->publish(id_to_path(id), data);
+    });
+}
+
+bool plugin::retrieve(std::string const &id, void * &data, size_t &data_size)
+{
+    // Try all caches until we find our data
+    for (auto cache : m_caches)
+    {
+        if (auto buffer = cache->retrieve(id_to_path(id)); buffer)
+        {
+            data = buffer->data();
+            data_size = buffer->size();
+
+            std::unique_lock<std::mutex> lock(m_mutex);
+            return m_resources.insert({data, buffer}).second;
+        }
+    }
+
+    return false;
+}
+
+void plugin::free(void *data)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_resources.erase(data);
+}
 
 //
 // FASTBuild cache plugin API implementation
@@ -66,55 +116,25 @@ extern "C" bool CacheInitEx(const char *cachePath,
                             CacheOutputFunc outputFunc)
 {
     g_output_func = outputFunc;
-
-    std::stringstream ss(cachePath);
-    for (std::string path; std::getline(ss, path, ';'); )
-    {
-        // Try to initialise a network cache, or fall back to a file cache
-        if (auto cache = std::make_shared<netcache>(); cache->init(path))
-        {
-            g_caches.push_back(cache);
-        }
-        else if (auto cache = std::make_shared<filecache>(); cache->init(path))
-        {
-            g_caches.push_back(cache);
-        }
-    }
-
-    // Succeed if at least one cache could be created
-    return !g_caches.empty();
+    return g_plugin.init(cachePath);
 }
 
 extern "C" void CacheShutdown()
 {
-    g_caches.clear();
+    g_plugin.shutdown();
 }
 
 extern "C" bool CachePublish(char const *cacheId, char const *data, size_t dataSize)
 {
-    // Publish to all caches
-    return std::all_of(g_caches.begin(), g_caches.end(), [&](auto &cache) {
-        return cache->publish(id_to_path(cacheId), std::string_view(data, data + dataSize));
-    });
+    return g_plugin.publish(cacheId, std::string_view(data, data + dataSize));
 }
 
 extern "C" bool CacheRetrieve(char const *cacheId, void * &data, size_t &dataSize)
 {
-    // Try all caches until we find our data
-    for (auto cache : g_caches)
-    {
-        if (auto buffer = cache->retrieve(id_to_path(cacheId)); buffer)
-        {
-            data = buffer->data();
-            dataSize = buffer->size();
-            return g_datastore.add(buffer);
-        }
-    }
-
-    return false;
+    return g_plugin.retrieve(cacheId, data, dataSize);
 }
 
 extern "C" void CacheFreeMemory(void *data, size_t /*dataSize*/)
 {
-    g_datastore.remove(data);
+    g_plugin.free(data);
 }

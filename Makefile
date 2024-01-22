@@ -2,9 +2,8 @@
 # this is really a proof of concept for now
 VERSION = 0.3
 
-SRC = src/plugin.cpp \
+SRC = src/plugin.cpp src/plugin.h \
       src/cache.h \
-      src/datastore.h \
       src/filecache.cpp src/filecache.h \
       src/netcache.cpp src/netcache.h \
       src/webdav-client.cpp src/webdav-client.h
