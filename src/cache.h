@@ -35,6 +35,8 @@
 class cache
 {
 public:
+    virtual ~cache() = default;
+
     // Initialise the cache
     virtual bool init(std::string const &cache_root) = 0;
 
