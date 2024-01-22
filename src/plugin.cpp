@@ -74,10 +74,10 @@ void plugin::shutdown()
 
 bool plugin::publish(std::string const &id, std::string_view data)
 {
-    // Publish to all caches
-    return std::all_of(m_caches.begin(), m_caches.end(), [&](auto &cache) {
+    // Publish to the first cache that wants our data
+    return std::find_if(m_caches.begin(), m_caches.end(), [&](auto &cache) {
         return cache->publish(id_to_path(id), data);
-    });
+    }) != m_caches.end();
 }
 
 bool plugin::retrieve(std::string const &id, void * &data, size_t &data_size)

@@ -40,10 +40,11 @@ back to a standard filesystem cache location:
 ### Multiple cache locations
 
 Multiple cache locations can be specified, separated by a semicolon. When retrieving, each cache
-is queried until data is found. When sending, data is published to all caches.
+is queried until data is found. When sending, each cache is queried until one publishing attempt
+is successful.
 
 ```
-.CachePath = 'https://secure-server.example.com/cacheroot/;C:\Temporary\Cache'
+.CachePath = 'C:\Temporary\Cache;https://secure-server.example.com/cacheroot/'
 ```
 
 ### Credentials
