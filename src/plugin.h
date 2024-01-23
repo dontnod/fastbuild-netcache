@@ -64,8 +64,6 @@ protected:
     // Map of tracked resources
     std::unordered_map<void *, std::shared_ptr<std::string>> m_resources;
 
-    // Protect m_data against concurrent writes
+    // Protect m_resources against concurrent writes
     std::mutex m_mutex;
 };
-
-
