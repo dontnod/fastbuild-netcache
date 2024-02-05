@@ -75,9 +75,10 @@ in a non-standard location, the full path to the DLL may have to be specified:
 
 ## Build instructions
 
-Just run `make`. In order to build with another compiler, use *e.g.* `make CXX=g++-13`.
+Just run `make` to build the plugin.
 
-For debug builds, use `make DEBUG=1`.
+In order to build with another compiler, use *e.g.* `make CXX=g++-13`. For debug builds,
+use `make DEBUG=1`.
 
 For now the best way to build on Windows is using an [MSYS2](https://www.msys2.org/) shell.
 

@@ -1,6 +1,5 @@
 
-# this is really a proof of concept for now
-VERSION = 0.3
+VERSION = 0.4
 
 SRC = src/plugin.cpp src/plugin.h \
       src/cache.cpp src/cache.h \
