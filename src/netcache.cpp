@@ -34,7 +34,7 @@
 #include "netcache.h"
 #include "webdav-client.h"
 
-bool netcache::init(std::string const &cache_root)
+bool netcache::init_internal(std::string const &cache_root)
 {
     auto match_webdav = std::regex("\\\\\\\\([^\\\\@]*)(@ssl)?(@[0-9]+)?(\\\\(davwwwroot\\\\)?.*)",
                                    std::regex_constants::icase);
@@ -112,7 +112,7 @@ bool netcache::init(std::string const &cache_root)
     return true;
 }
 
-bool netcache::publish(std::filesystem::path const &path, std::string_view data)
+bool netcache::publish_internal(std::filesystem::path const &path, std::string_view data)
 {
     if (!ensure_directory(path.parent_path()))
     {
@@ -128,7 +128,7 @@ bool netcache::publish(std::filesystem::path const &path, std::string_view data)
     return true;
 }
 
-std::shared_ptr<std::string> netcache::retrieve(std::filesystem::path const &path)
+std::shared_ptr<std::string> netcache::retrieve_internal(std::filesystem::path const &path)
 {
     auto res = m_client->get(m_root / path);
     if (!res || res->status != httplib::StatusCode::OK_200)

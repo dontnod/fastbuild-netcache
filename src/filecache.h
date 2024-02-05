@@ -35,15 +35,15 @@
 
 class filecache : public cache
 {
-public:
+protected:
     // Initialise the file cache plugin
-    virtual bool init(std::string const &cache_root);
+    virtual bool init_internal(std::string const &cache_root);
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, std::string_view data);
+    virtual bool publish_internal(std::filesystem::path const &path, std::string_view data);
 
     // Retrieve a cache entry
-    virtual std::shared_ptr<std::string> retrieve(std::filesystem::path const &path);
+    virtual std::shared_ptr<std::string> retrieve_internal(std::filesystem::path const &path);
 
 private:
     // Path to the cache root

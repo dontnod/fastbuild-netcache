@@ -3,7 +3,7 @@
 VERSION = 0.3
 
 SRC = src/plugin.cpp src/plugin.h \
-      src/cache.h \
+      src/cache.cpp src/cache.h \
       src/filecache.cpp src/filecache.h \
       src/netcache.cpp src/netcache.h \
       src/webdav-client.cpp src/webdav-client.h

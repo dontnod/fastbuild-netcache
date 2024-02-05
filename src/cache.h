@@ -38,13 +38,13 @@ public:
     virtual ~cache() = default;
 
     // Initialise the cache
-    virtual bool init(std::string const &cache_root) = 0;
+    bool init(std::string const &cache_root);
 
     // Publish a cache entry
-    virtual bool publish(std::filesystem::path const &path, std::string_view data) = 0;
+    bool publish(std::filesystem::path const &path, std::string_view data);
 
     // Retrieve a cache entry
-    virtual std::shared_ptr<std::string> retrieve(std::filesystem::path const &path) = 0;
+    std::shared_ptr<std::string> retrieve(std::filesystem::path const &path);
 
     // Output a message using the std::format syntax
     template<typename... T>
@@ -53,4 +53,11 @@ public:
         extern std::function<void(char const *)> g_output_func;
         g_output_func((" - NetCache: " + std::format(fmt, std::forward<T>(args)...)).c_str());
     }
+
+protected:
+    virtual bool init_internal(std::string const &cache_root) = 0;
+
+    virtual bool publish_internal(std::filesystem::path const &path, std::string_view data) = 0;
+
+    virtual std::shared_ptr<std::string> retrieve_internal(std::filesystem::path const &path) = 0;
 };

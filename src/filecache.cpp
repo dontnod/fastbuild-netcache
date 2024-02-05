@@ -26,7 +26,7 @@
 
 #include "filecache.h"
 
-bool filecache::init(std::string const &cache_root)
+bool filecache::init_internal(std::string const &cache_root)
 {
     m_root = std::filesystem::path(cache_root);
     if (!std::filesystem::is_directory(m_root))
@@ -39,7 +39,7 @@ bool filecache::init(std::string const &cache_root)
     return true;
 }
 
-bool filecache::publish(std::filesystem::path const &path, std::string_view data)
+bool filecache::publish_internal(std::filesystem::path const &path, std::string_view data)
 {
     static std::minstd_rand rand;
 
@@ -81,7 +81,7 @@ bool filecache::publish(std::filesystem::path const &path, std::string_view data
     return true;
 }
 
-std::shared_ptr<std::string> filecache::retrieve(std::filesystem::path const &path)
+std::shared_ptr<std::string> filecache::retrieve_internal(std::filesystem::path const &path)
 {
     std::ifstream file(m_root / path, std::ios::in | std::ios::binary);
     if (!file)

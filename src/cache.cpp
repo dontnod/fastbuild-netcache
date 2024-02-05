@@ -21,37 +21,22 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#pragma once
-
-#include <memory> // for std::shared_ptr
-#include <string> // for std::string
-#include <filesystem> // for std::filesystem::path
-
 #include "cache.h"
 
-//
-// The network cache class
-//
-
-class netcache : public cache
+// Initialise the cache
+bool cache::init(std::string const &cache_root)
 {
-protected:
-    // Initialise the network cache plugin
-    virtual bool init_internal(std::string const &cache_root);
+    return init_internal(cache_root);
+}
 
-    // Publish a cache entry
-    virtual bool publish_internal(std::filesystem::path const &path, std::string_view data);
+// Publish a cache entry
+bool cache::publish(std::filesystem::path const &path, std::string_view data)
+{
+    return publish_internal(path, data);
+}
 
-    // Retrieve a cache entry
-    virtual std::shared_ptr<std::string> retrieve_internal(std::filesystem::path const &path);
-
-    // Ensure that a given remote directory exists
-    bool ensure_directory(std::filesystem::path path);
-
-private:
-    // Path to the cache root on the server
-    std::filesystem::path m_root;
-
-    // HTTP/WebDAV client
-    std::shared_ptr<class webdav_client> m_client;
-};
+// Retrieve a cache entry
+std::shared_ptr<std::string> cache::retrieve(std::filesystem::path const &path)
+{
+    return retrieve_internal(path);
+}
