@@ -28,13 +28,20 @@ CXXFLAGS = -std=c++20 -Os
 INCLUDES = -I3rdparty/fastbuild/Code/Tools/FBuild/FBuildCore/Cache \
            -I3rdparty/cpp-httplib
 LIBS = -lssl -lcrypto
+ifneq ($(DEBUG),1)
+LDFLAGS += -s
+endif
 
 ifeq ($(OS),Windows_NT)
+ifeq ($(DEBUG),1)
 CXXFLAGS += -g -gcodeview
+endif
 LIBS += -lws2_32 -lcrypt32
 LDFLAGS += -static
 else
+ifeq ($(DEBUG),1)
 CXXFLAGS += -g -ggdb
+endif
 CXXFLAGS += -fPIC
 endif
 
