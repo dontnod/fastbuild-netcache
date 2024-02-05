@@ -28,6 +28,8 @@
 #include <functional> // for std::function
 #include <filesystem> // for std::filesystem::path
 
+#include "stats.h"
+
 //
 // The abstract cache class
 //
@@ -46,6 +48,9 @@ public:
     // Retrieve a cache entry
     std::shared_ptr<std::string> retrieve(std::filesystem::path const &path);
 
+    // Output statistics about this cache
+    void summary() const;
+
     // Output a message using the std::format syntax
     template<typename... T>
     static void log(std::format_string<T...> const &fmt, T&&... args)
@@ -60,4 +65,10 @@ protected:
     virtual bool publish_internal(std::filesystem::path const &path, std::string_view data) = 0;
 
     virtual std::shared_ptr<std::string> retrieve_internal(std::filesystem::path const &path) = 0;
+
+    // Store the cache root for stats formatting
+    std::string m_root;
+
+    // Track time and bytes spent retrieving and publishing
+    stats m_retrieve, m_publish;
 };

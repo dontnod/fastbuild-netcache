@@ -26,17 +26,33 @@
 // Initialise the cache
 bool cache::init(std::string const &cache_root)
 {
+    m_root = cache_root;
     return init_internal(cache_root);
 }
 
 // Publish a cache entry
 bool cache::publish(std::filesystem::path const &path, std::string_view data)
 {
-    return publish_internal(path, data);
+    auto timer = m_publish.start();
+    auto ret = publish_internal(path, data);
+    m_publish.stop(timer, ret, data.size());
+    return ret;
 }
 
 // Retrieve a cache entry
 std::shared_ptr<std::string> cache::retrieve(std::filesystem::path const &path)
 {
-    return retrieve_internal(path);
+    auto timer = m_retrieve.start();
+    auto ret = retrieve_internal(path);
+    m_retrieve.stop(timer, bool(ret), ret ? ret->size() : 0);
+    return ret;
+}
+
+// Print stats about the cache
+void cache::summary() const
+{
+    extern std::function<void(char const *)> g_output_func;
+    g_output_func(std::format(" - {}", m_root).c_str());
+    g_output_func(std::format(" - Retrieve  : {}", m_retrieve.summary()).c_str());
+    g_output_func(std::format(" - Publish   : {}", m_publish.summary()).c_str());
 }

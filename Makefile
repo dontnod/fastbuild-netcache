@@ -6,7 +6,8 @@ SRC = src/plugin.cpp src/plugin.h \
       src/cache.cpp src/cache.h \
       src/filecache.cpp src/filecache.h \
       src/netcache.cpp src/netcache.h \
-      src/webdav-client.cpp src/webdav-client.h
+      src/webdav-client.cpp src/webdav-client.h \
+      src/tracker.h
 LIB = FBuild-NetCache$(LIB_SUFFIX)
 PACKAGE = fastbuild-netcache-$(VERSION)_$(PLATFORM)-x64$(PKG_SUFFIX)
 

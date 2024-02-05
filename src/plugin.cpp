@@ -29,6 +29,7 @@
 #include <CachePluginInterface.h>
 
 #include <algorithm> // for std::find_if()
+#include <chrono>    // for std::chrono
 #include <memory>    // for std::shared_ptr
 #include <mutex>     // for std::mutex
 #include <sstream>   // for std::stringstream
@@ -69,6 +70,12 @@ bool plugin::init(std::string const &path)
 
 void plugin::shutdown()
 {
+    g_output_func("--- NetCache Summary -----------------------------------------------");
+    g_output_func("               Seen  Hit   Miss  Size(MiB) Avg(MiB) Spd(MiB/s)");
+    for (auto cache : m_caches)
+        cache->summary();
+    g_output_func("--------------------------------------------------------------------");
+
     m_caches.clear();
 }
 
